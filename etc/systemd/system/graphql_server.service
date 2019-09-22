@@ -1,0 +1,12 @@
+[Unit]
+Description=contacts list app server
+After=network.target
+
+[Service]
+User=mason
+Group=mason
+ExecStart=/usr/bin/node /opt/server/
+ExecStop=/bin/kill -9 $MAINPID
+
+[Install]
+WantedBy=nginx.service
