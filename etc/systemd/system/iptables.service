@@ -1,12 +1,13 @@
 
 [Unit]
 Description=iptables rules
-After=network.target
 
 [Service]
 User=root
-ExecStart=iptables-restore < /etc/iptables.rules.v4
-ExecStop=iptables-restore < /etc/iptables.empty
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c "/sbin/iptables-restore < /etc/iptables.rules.v4"
+ExecStop=/bin/sh -c "/sbin/iptables-restore < /etc/iptables.empty"
 
 [Install]
-WantedBy=nginx.service
+WantedBy=multi-user.target
