@@ -1,0 +1,73 @@
+---
+- hosts: all
+  remote_user: mason
+  become: true
+  vars:
+    NODEJS_VERSION: "11"
+  tasks:
+    - name: add the gpg key for nodejs LTS
+      apt_key:
+        url: "https://deb.nodesource.com/gpgkey/nodesource.gpg.key"
+        state: present
+
+    - name: Install the nodejs LTS repos
+      apt_repository:
+        repo: "deb https://deb.nodesource.com/node_{{ NODEJS_VERSION }}.x {{ ansible_distribution_release }} main"
+        state: present
+        update_cache: yes
+
+    - name: Install the nodejs
+      apt:
+        name: nodejs
+        state: present
+
+    - name: add the gpg key for mongodb 4.2
+      apt_key:
+        url: "https://www.mongodb.org/static/pgp/server-4.2.asc"
+        state: present
+
+    - name: Install mongodb repos
+      apt_repository:
+        repo: "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/4.2 main"
+        state: present
+        update_cache: yes
+
+    - name: Install mongodb
+      apt:
+        name: mongodb-org
+        state: present
+
+    - name: start mongod service
+      service:
+        name: mongod
+        state: started
+
+    - name: Install nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: add nginx sites conf
+      copy:
+        src: website/website.conf
+        dest: /etc/nginx/sites-available/website.conf
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: html
+      copy:
+        src: website/index.html
+        dest: /var/www/build/
+        owner: root
+        group: root
+        mode: 0644
+
+    - name:
+      file:
+        state: link
+        src: /etc/nginx/sites-available/website.conf
+        path: /etc/nginx/sites-enabled/website.conf
+
+    - name: restart nginx
+      shell: systemctl restart nginx

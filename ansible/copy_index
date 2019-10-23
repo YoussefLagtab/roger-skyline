@@ -1,0 +1,1 @@
+ansible -v webservers -i inventory -b --user=mason --private-key=~/.ssh/id_rsa_debian/ -m copy -a "src=dist/index.html dest=/var/www/html"
