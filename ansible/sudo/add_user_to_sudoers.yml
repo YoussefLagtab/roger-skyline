@@ -1,0 +1,17 @@
+---
+- hosts: all
+  remote_user: test1
+  become: true
+  become_method: su
+  become_user: root
+  tasks:
+    - name: install sudo package
+      apt:
+        name: sudo
+        state: present
+
+    - name: add user to sudoers
+      user:
+        name: test1
+        append: yes
+        groups: sudo

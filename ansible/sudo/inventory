@@ -1,0 +1,5 @@
+[webservers]
+10.11.100.196 ansible_ssh_private_key_file=/Users/ylagtab/.ssh/id_rsa_test2
+
+[all:vars]
+ansible_become_pass='{{ my_root_password }}'

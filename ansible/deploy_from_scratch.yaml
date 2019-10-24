@@ -12,7 +12,7 @@
 
     - name: Install the nodejs LTS repos
       apt_repository:
-        repo: "deb https://deb.nodesource.com/node_{{ NODEJS_VERSION }}.x {{ ansible_distribution_release }} main"
+        repo: "deb https://deb.nodesource.com/node_{{ NODEJS_VERSION }}.x buster main"
         state: present
         update_cache: yes
 
@@ -40,6 +40,7 @@
     - name: start mongod service
       service:
         name: mongod
+        enabled: yes
         state: started
 
     - name: Install nginx
@@ -55,7 +56,16 @@
         group: root
         mode: 0644
 
-    - name: html
+    - name:
+      file:
+        state: link
+        src: /etc/nginx/sites-available/website.conf
+        path: /etc/nginx/sites-enabled/website.conf
+
+    - name: add website
+      file:
+        path: /var/www/build/
+        state: directory
       copy:
         src: website/index.html
         dest: /var/www/build/
@@ -63,11 +73,8 @@
         group: root
         mode: 0644
 
-    - name:
-      file:
-        state: link
-        src: /etc/nginx/sites-available/website.conf
-        path: /etc/nginx/sites-enabled/website.conf
-
-    - name: restart nginx
-      shell: systemctl restart nginx
+    - name: restart nginx service
+      service:
+        name: nginx
+        enabled: yes
+        state: restarted
