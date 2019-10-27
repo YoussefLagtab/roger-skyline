@@ -1,34 +1,35 @@
 ---
 - hosts: all
-  remote_user: mason
+  remote_user: test1
   become: true
+  become_method: sudo
   vars:
-    NODEJS_VERSION: "11"
+    NODEJS_VERSION: '11'
   tasks:
     - name: add the gpg key for nodejs LTS
       apt_key:
-        url: "https://deb.nodesource.com/gpgkey/nodesource.gpg.key"
+        url: 'https://deb.nodesource.com/gpgkey/nodesource.gpg.key'
         state: present
 
     - name: Install the nodejs LTS repos
       apt_repository:
-        repo: "deb https://deb.nodesource.com/node_{{ NODEJS_VERSION }}.x buster main"
+        repo: 'deb https://deb.nodesource.com/node_{{ NODEJS_VERSION }}.x buster main'
         state: present
         update_cache: yes
 
-    - name: Install the nodejs
+    - name: Install nodejs
       apt:
         name: nodejs
         state: present
 
     - name: add the gpg key for mongodb 4.2
       apt_key:
-        url: "https://www.mongodb.org/static/pgp/server-4.2.asc"
+        url: 'https://www.mongodb.org/static/pgp/server-4.2.asc'
         state: present
 
     - name: Install mongodb repos
       apt_repository:
-        repo: "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/4.2 main"
+        repo: 'deb http://repo.mongodb.org/apt/debian buster/mongodb-org/4.2 main'
         state: present
         update_cache: yes
 
@@ -48,33 +49,120 @@
         name: nginx
         state: present
 
+    - name: Install vim
+      apt:
+        name: vim
+        state: present
+
+    - name: Install pip
+      apt:
+        name: python-pip
+        state: present
+
+    - name: install openssl-python with pip
+      pip:
+        name: openssl-python
+        state: present
+
+    - name: remove default site
+      file:
+        path: /etc/nginx/sites-available/default
+        state: absent
+
+    - name: remove default site link
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
     - name: add nginx sites conf
       copy:
-        src: website/website.conf
-        dest: /etc/nginx/sites-available/website.conf
+        src: ../etc/nginx/sites-available/contacts.conf
+        dest: /etc/nginx/sites-available/contacts.conf
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: add site link
+      file:
+        state: link
+        src: /etc/nginx/sites-available/contacts.conf
+        path: /etc/nginx/sites-enabled/contacts.conf
+
+    - name: add html
+      copy:
+        src: ../var/www/build
+        dest: /var/www/
+        owner: root
+        group: root
+        mode: 0644
+
+    # - name: openssl
+    #   shell: openssl req -x509 -nodes -subj /C=MA -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt
+
+    - name: generate an OpenSSL private key
+      openssl_privatekey:
+        path: /etc/ssl/private/nginx-selfsigned.key
+
+    - name: 'generate OpenSSL crs'
+      openssl_csr:
+        country_name: MA
+        privatekey_path: /etc/ssl/private/nginx-selfsigned.key
+        path: /etc/ssl/certs/cert.crs
+
+    - name: generate ssl certificate
+      openssl_certificate:
+        csr_path: /etc/ssl/certs/cert.crs
+        provider: selfsigned
+        path: /etc/ssl/certs/nginx-selfsigned.crt
+        privatekey_path: /etc/ssl/private/nginx-selfsigned.key
+
+    - name: add nginx certificate conf
+      copy:
+        src: ../etc/nginx/snippets/self-signed.conf
+        dest: /etc/nginx/snippets/self-signed.conf
         owner: root
         group: root
         mode: 0644
 
     - name:
-      file:
-        state: link
-        src: /etc/nginx/sites-available/website.conf
-        path: /etc/nginx/sites-enabled/website.conf
-
-    - name: add website
-      file:
-        path: /var/www/build/
-        state: directory
       copy:
-        src: website/index.html
-        dest: /var/www/build/
-        owner: root
-        group: root
-        mode: 0644
+        src: ../etc/iptables.empty
+        dest: /etc/iptables.empty
 
-    - name: restart nginx service
+    - name:
+      copy:
+        src: ../etc/iptables.rules.v4
+        dest: /etc/iptables.rules.v4
+
+    - name:
+      copy:
+        src: ../etc/systemd/system/iptables.service
+        dest: /etc/systemd/system/iptables.service
+
+    - name:
+      copy:
+        src: ../etc/systemd/system/graphql_server.service
+        dest: /etc/systemd/system/graphql_server.service
+
+    - name:
+      copy:
+        src: ../var/www/server
+        dest: /opt
+
+    - name:
+      npm:
+        path: /opt/server
+        state: latest
+
+    - name:
       service:
-        name: nginx
+        name: graphql_server.service
         enabled: yes
         state: restarted
+    # - name:
+    #   service:
+    #     name: iptables.service
+    #     enabled: yes
+    #     state: restarted
+    # - name:
+    #   git:

@@ -1,0 +1,1 @@
+ansible-playbook -v -i inventory add_user_to_sudoers.yml --ask-vault-pass --extra-vars @passwords.yml

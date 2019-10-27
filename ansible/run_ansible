@@ -1,1 +1,1 @@
-ansible-playbook -i inventory deploy_from_scratch.yaml --ask-vault-pass --extra-vars @passwd.yml
+ansible-playbook -i inventory deploy_from_scratch.yaml --ask-vault-pass --extra-vars @passwords.yml
