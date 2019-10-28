@@ -1,0 +1,16 @@
+#!/bin/bash
+
+mkdir /var/monitor-crontab &>/dev/null
+pushd /var/monitor-crontab/ &>/dev/null
+
+[ -f cron.sha256 ] || shasum -a 256 /etc/crontab > cron.sha256 2>errors.log
+
+shasum -a 256 -c cron.sha256 &>/dev/null
+
+if [ $? -eq 1 ]
+then
+	echo /etc/crontab has been changed! | sendmail root
+	shasum -a 256 /etc/crontab > cron.sha256 2>errors.log
+fi
+
+popd &>/dev/null

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+echo "________________________________________________________________________________________________________" >> /var/log/update_script.log
+echo "updating packages (`date`)" &>>/var/log/update_script.log
+echo "________________________________________________________________________________________________________" >> /var/log/update_script.log 
+apt update &>>/var/log/update_script.log && apt upgrade -y &>>/var/log/update_script.log
+echo "________________________________________________________________________________________________________" >> /var/log/update_script.log
