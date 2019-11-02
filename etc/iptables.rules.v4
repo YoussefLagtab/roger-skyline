@@ -10,6 +10,7 @@
 -A INPUT -p tcp -m connlimit --connlimit-above 80 --connlimit-mask 32 --connlimit-saddr -j REJECT --reject-with tcp-reset
 -A INPUT -p tcp -m conntrack --ctstate NEW -m limit --limit 60/sec --limit-burst 20 -j ACCEPT
 -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A INPUT -m conntrack -cstate RELATED,ESTABLISHED -j ACCEPT
 -A INPUT -p tcp -m tcp --tcp-flags RST RST -m limit --limit 2/sec --limit-burst 2 -j ACCEPT
 -A INPUT -p tcp -m tcp --tcp-flags RST RST -j DROP
 -A INPUT -p tcp -m tcp -m conntrack --ctstate INVALID,UNTRACKED -j SYNPROXY --sack-perm --timestamp --wscale 7 --mss 1460
@@ -20,6 +21,7 @@
 -A FORWARD -j DROP
 -A OUTPUT -o lo -j ACCEPT
 -A OUTPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A OUTPUT -m conntrack -cstate RELATED,ESTABLISHED -j ACCEPT
 -A OUTPUT -p tcp -m tcp --dport 80 -m state --state NEW -j ACCEPT
 -A OUTPUT -p tcp -m tcp --dport 443 --sport 443 -m state --state NEW -j ACCEPT
 -A OUTPUT -p tcp -m tcp --dport 53 -m state --state NEW -j ACCEPT

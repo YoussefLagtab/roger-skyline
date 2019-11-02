@@ -4,5 +4,5 @@
 [all:vars]
 ansible_connection=ssh
 ansible_user=test1
-ansible_ssh_pass={{ my_ssh_pass }}
+ansible_ssh_pass={{ my_ssh_password }}
 ansible_become_pass='{{ my_root_password }}'

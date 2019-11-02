@@ -1,5 +1,0 @@
-install packages (nodejs, mongodb, nginx)		done
-
-add nginx site conf								done
-
-create self signed certifcate					!!

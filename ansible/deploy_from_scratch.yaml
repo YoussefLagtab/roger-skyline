@@ -96,9 +96,6 @@
         group: root
         mode: 0644
 
-    # - name: openssl
-    #   shell: openssl req -x509 -nodes -subj /C=MA -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt
-
     - name: generate an OpenSSL private key
       openssl_privatekey:
         path: /etc/ssl/private/nginx-selfsigned.key
@@ -156,13 +153,17 @@
 
     - name:
       service:
+        name: nginx
+        enabled: yes
+        state: restarted
+
+    - name:
+      service:
         name: graphql_server.service
         enabled: yes
         state: restarted
-    # - name:
-    #   service:
-    #     name: iptables.service
-    #     enabled: yes
-    #     state: restarted
-    # - name:
-    #   git:
+    - name:
+      service:
+        name: iptables.service
+        enabled: yes
+        state: restarted

@@ -1,0 +1,206 @@
+---
+- hosts: all
+  remote_user: test1
+  become: true
+  become_method: su
+  become_user: root
+  vars:
+    SSH_PORT: 7595
+    NODEJS_VERSION: "11"
+  tasks:
+    - name: install GNU PG
+      apt:
+        name: gnupg
+
+    - name: add the gpg key for nodejs LTS
+      apt_key:
+        url: "https://deb.nodesource.com/gpgkey/nodesource.gpg.key"
+
+    - name: Install the nodejs LTS repos
+      apt_repository:
+        repo: "deb https://deb.nodesource.com/node_{{ NODEJS_VERSION }}.x buster main"
+        update_cache: yes
+
+    - name: Install nodejs
+      apt:
+        name: nodejs
+
+    - name: add the gpg key for mongodb 4.2
+      apt_key:
+        url: "https://www.mongodb.org/static/pgp/server-4.2.asc"
+
+    - name: Install mongodb repos
+      apt_repository:
+        repo: "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/4.2 main"
+        update_cache: yes
+
+    - name: Install mongodb
+      apt:
+        name: mongodb-org
+
+    - name: Install nginx
+
+    - name: Install nginx
+      apt:
+        name: ufw
+
+    - name: Install nginx
+      apt:
+        name: fail2ban
+
+    - name: Install vim
+      apt:
+        name: vim
+
+    - name: Install pip
+      apt:
+        name: python-pip
+
+    - name: install openssl-python with pip
+      pip:
+        name: openssl-python
+
+    - name: install sudo package
+      apt:
+        name: sudo
+
+    - name: add user to sudoers
+      user:
+        name: test1
+        append: yes
+        groups: sudo
+
+    - name: deploy ssh pub key to remote
+      authorized_key:
+        key: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDl6/wHTnf+Q0rW+SKdplqtlRb18SbuEhMQ+5Da4wnEe9SB4t36VyMlQmEBSVtguPbBqUd0IheytCtwNnFRWpto8ct6dXhv1F7F//wfdDS4JHK6VUty9SYlyDi64iWLX9QgrrBcOX4+bek5RZdcWbds+ll99UXm5RFoJtkPrAQrYltM/zyrCy0993iz2Wei9VdKnOstA3xTluPf6L5WiYkOKt8uTROymcvmcCVTjacLhRar9fFv4j5vo1lnZvS+A65c0nXhFeL7dot263fzNMdHYGhKwMO71x1d+y2PENMbekXkKD7N59lr437sbRZwA1HtP+IPauWT9+WnhiUOR+G9 ylagtab@e1r7p15.1337.ma
+        user: test1
+
+    # - name: set static ip
+    #   copy:
+    #     src: ../etc/network/interfaces
+    #     dest: /etc/network/interfaces
+
+    - name: change ssh port, allow pubkeyauth only
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        line: "{{ item }}"
+      with_items:
+        - "Port 7595"
+        - "PermitRootLogin no"
+        - "PubkeyAuthentication yes"
+        - "PasswordAuthentication no"
+
+    - name: copy update-pkg script
+      copy:
+        src: ../usr/bin/update-pkg
+        dest: /usr/bin/update-pkg
+        mode: 0744
+
+    - name: copy monitor-crontab script
+      copy:
+        src: ../usr/bin/monitor-crontab
+        dest: /usr/bin/monitor-crontab
+        mode: 0744
+
+    - name: copy root crontab
+      copy:
+        src: ../var/spool/cron/crontabs/root
+        dest: /var/spool/cron/crontabs/root
+
+    - name: remove default site
+      file:
+        path: /etc/nginx/sites-available/default
+        state: absent
+
+    - name: remove default site link
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: add site conf
+      copy:
+        src: ../etc/nginx/sites-available/contacts.conf
+        dest: /etc/nginx/sites-available/contacts.conf
+
+    - name: add site link
+      file:
+        state: link
+        src: /etc/nginx/sites-available/contacts.conf
+        path: /etc/nginx/sites-enabled/contacts.conf
+
+    - name: add build
+      copy:
+        src: ../var/www/build
+        dest: /var/www/
+
+    - name: add graphql server
+      copy:
+        src: ../opt/server
+        dest: /opt
+
+    - name: copy graphql_server service
+      copy:
+        src: ../etc/systemd/system/graphql_server.service
+        dest: /etc/systemd/system/graphql_server.service
+
+    - name: install npm dependencies for the server
+      npm:
+        path: /opt/server
+        state: latest
+
+    - name: generate an OpenSSL private key
+      openssl_privatekey:
+        path: /etc/ssl/private/nginx-selfsigned.key
+
+    - name: "generate OpenSSL crs"
+      openssl_csr:
+        country_name: MA
+        privatekey_path: /etc/ssl/private/nginx-selfsigned.key
+        path: /etc/ssl/certs/cert.crs
+
+    - name: generate ssl certificate
+      openssl_certificate:
+        csr_path: /etc/ssl/certs/cert.crs
+        provider: selfsigned
+        path: /etc/ssl/certs/nginx-selfsigned.crt
+        privatekey_path: /etc/ssl/private/nginx-selfsigned.key
+
+    - name: add nginx certificate conf
+      copy:
+        src: ../etc/nginx/snippets/self-signed.conf
+        dest: /etc/nginx/snippets/self-signed.conf
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: start mongod sevice
+      service:
+        name: mongod
+        enabled: yes
+        state: started
+
+    - name: start graphql_server sevice
+      service:
+        name: graphql_server.service
+        enabled: yes
+        state: started
+
+    - name: start nginx sevice
+      service:
+        name: nginx
+        enabled: yes
+        state: restarted
+
+
+
+    # - name: restart ssh
+    #   service:
+    #     name: ssh
+    #     state: restarted
+    # - name: remove root password
+    #   shell: passwd -d root
+    # - name: restart iptables service
+    #   service:
+    #     name: iptables.service
+    #     enabled: yes
+    #     state: restarted

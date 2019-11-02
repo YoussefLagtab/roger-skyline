@@ -1,0 +1,1 @@
+ansible-playbook -v -i root_inventory setup_with_root.yml --ask-vault-pass --extra-vars @passwords.yml
