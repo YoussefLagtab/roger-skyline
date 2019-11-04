@@ -1,0 +1,50 @@
+---
+- hosts: webservers
+  remote_user: mason
+  become: true
+  become_method: sudo
+
+  tasks:
+    # - name: remove build folder
+    #   file:
+    #     path: /var/www/build
+    #     state: absent
+
+    - name: add build
+      copy:
+        src: ../var/www/build
+        dest: /var/www/
+
+    - name: remove serevr
+      file:
+        path: /opt/server
+        state: absent
+
+
+    - name: add server
+      copy:
+        src: ../opt/server
+        dest: /opt/
+
+    - name: install npm dependencies for the server
+      npm:
+        path: /opt/server
+        state: latest
+
+    # - name: restart mongod sevice
+    #   service:
+    #     name: mongod
+    #     enabled: yes
+    #     state: restarted
+
+    - name: restart graphql_server sevice
+      service:
+        name: graphql_server.service
+        enabled: yes
+        state: restarted
+
+    - name: restart nginx sevice
+      service:
+        name: nginx
+        enabled: yes
+        state: restarted

@@ -5,7 +5,8 @@
   become_method: su
   become_user: root
   vars:
-    SSH_PORT: 7595
+    SSH_KEY: <ssh-key>
+    SSH_PORT: 37595
     NODEJS_VERSION: "11"
   tasks:
     - name: install GNU PG
@@ -39,12 +40,14 @@
         name: mongodb-org
 
     - name: Install nginx
+      apt:
+        name: nginx
 
-    - name: Install nginx
+    - name: Install ufw
       apt:
         name: ufw
 
-    - name: Install nginx
+    - name: Install fail2ban
       apt:
         name: fail2ban
 
@@ -66,19 +69,19 @@
 
     - name: add user to sudoers
       user:
-        name: test1
+        name: mason
         append: yes
         groups: sudo
 
     - name: deploy ssh pub key to remote
       authorized_key:
-        key: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDl6/wHTnf+Q0rW+SKdplqtlRb18SbuEhMQ+5Da4wnEe9SB4t36VyMlQmEBSVtguPbBqUd0IheytCtwNnFRWpto8ct6dXhv1F7F//wfdDS4JHK6VUty9SYlyDi64iWLX9QgrrBcOX4+bek5RZdcWbds+ll99UXm5RFoJtkPrAQrYltM/zyrCy0993iz2Wei9VdKnOstA3xTluPf6L5WiYkOKt8uTROymcvmcCVTjacLhRar9fFv4j5vo1lnZvS+A65c0nXhFeL7dot263fzNMdHYGhKwMO71x1d+y2PENMbekXkKD7N59lr437sbRZwA1HtP+IPauWT9+WnhiUOR+G9 ylagtab@e1r7p15.1337.ma
-        user: test1
+        key: {{ SSH_KEY }}
+        user: mason
 
-    # - name: set static ip
-    #   copy:
-    #     src: ../etc/network/interfaces
-    #     dest: /etc/network/interfaces
+    - name: set static ip
+      copy:
+        src: ../etc/network/interfaces
+        dest: /etc/network/interfaces
 
     - name: change ssh port, allow pubkeyauth only
       lineinfile:
@@ -89,6 +92,44 @@
         - "PermitRootLogin no"
         - "PubkeyAuthentication yes"
         - "PasswordAuthentication no"
+
+    - name: allow http ufw
+      ufw:
+        port: http
+        rule: allow
+
+    - name: allow https ufw
+      ufw:
+        port: https
+        rule: allow
+
+    - name: limit ssh ufw
+      ufw:
+        port: 37595
+        rule: allow
+
+    - name: enable ufw
+      ufw:
+        state: enabled
+        logging: low
+
+    - name: move jail.conf jail.conf.save
+      command: mv /etc/fail2ban/jail.conf /etc/fail2ban/jail.conf.save
+
+    - name: copy jail.local
+      copy:
+        src: ../etc/fail2ban/jail.local
+        dest: /etc/fail2ban/jail.local
+
+    - name: copy http-dos filter
+      copy:
+        src: ../etc/fail2ban/filter.d/http-dos.conf
+        dest: /etc/fail2ban/filter.d/http-dos.conf
+
+    - name: copy portscan filter
+      copy:
+        src: ../etc/fail2ban/filter.d/portscan.conf
+        dest: /etc/fail2ban/filter.d/portscan.conf
 
     - name: copy update-pkg script
       copy:
@@ -173,34 +214,38 @@
         group: root
         mode: 0644
 
-    - name: start mongod sevice
+    - name: restart mongod sevice
       service:
         name: mongod
         enabled: yes
-        state: started
+        state: restarted
 
-    - name: start graphql_server sevice
+    - name: restart graphql_server sevice
       service:
         name: graphql_server.service
         enabled: yes
-        state: started
+        state: restarted
 
-    - name: start nginx sevice
+    - name: restart nginx sevice
       service:
         name: nginx
         enabled: yes
         state: restarted
 
+    - name: restart ssh
+      service:
+        name: ssh
+        state: restarted
 
+    - name: restart ufw
+      service:
+        name: ufw
+        state: restarted
 
-    # - name: restart ssh
-    #   service:
-    #     name: ssh
-    #     state: restarted
-    # - name: remove root password
-    #   shell: passwd -d root
-    # - name: restart iptables service
-    #   service:
-    #     name: iptables.service
-    #     enabled: yes
-    #     state: restarted
+    - name: restart fail2ban
+      service:
+        name: fail2ban
+        state: restarted
+
+    - name: remove root password
+      shell: passwd -d root

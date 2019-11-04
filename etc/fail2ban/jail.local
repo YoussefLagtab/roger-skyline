@@ -1,0 +1,29 @@
+[DEFAULT]
+
+[sshd]
+enable = true
+port = 37595
+action = ufw
+maxretry = 10
+findtime = 43200
+bantime = 86400
+
+[http-dos]
+enabled = true
+port = http,https
+filter = http-dos
+logpath = /var/log/nginx/access.log
+maxretry = 30
+findtime = 60
+bantime = 60
+action = ufw
+
+[portscan]
+enabled  = true
+ignoreip = 10.11.254.254 10.11.254.253
+filter   = portscan
+logpath  = /var/log/ufw.log
+action   = ufw
+findtime = 200
+#bantime  = 3600
+maxretry = 6

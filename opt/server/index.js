@@ -1,12 +1,9 @@
 const { GraphQLServer } = require('graphql-yoga')
 const mongoose = require('mongoose')
 
-mongoose.connect(
-	'mongodb://localhost:27017/contact-list',
-	{
-		useNewUrlParser: true
-	}
-)
+mongoose.connect('mongodb://localhost:27017/contact-list', {
+	useNewUrlParser: true
+})
 
 const Contact = mongoose.model('contacts', {
 	firstname: String,
@@ -30,7 +27,7 @@ const typeDefs = `
     contacts(n:Int): [Contact]
     contact(firstname: String!): Contact
   }
- 
+
   type Mutation {
     createContact(
 			firstname: String!,
@@ -44,7 +41,7 @@ const typeDefs = `
 			lastname: String!,
 			phone: String!
 		): Contact
-		
+
     removeContact(id: ID!): ID!
   }
 `
@@ -92,6 +89,9 @@ const resolvers = {
 
 const server = new GraphQLServer({ typeDefs, resolvers })
 
+const options = {
+	playground: null
+}
 mongoose.connection.once('open', () => {
-	server.start(() => console.log('Server is running on localhost:4000'))
+	server.start(options, () => console.log('Server is running on localhost:4000'))
 })
